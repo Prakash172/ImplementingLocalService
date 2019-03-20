@@ -17,9 +17,11 @@
         android:id="@+id/stopService"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
     <Button
-        android:text="next activity"
         android:id="@+id/next_activity"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/acme"
+        android:text="next activity" />
 </LinearLayout>

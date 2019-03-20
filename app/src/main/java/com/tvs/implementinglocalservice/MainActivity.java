@@ -1,10 +1,14 @@
 package com.tvs.implementinglocalservice;
 
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.provider.Settings;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -23,6 +27,8 @@ public class MainActivity extends AppCompatActivity implements NetworkCallbackIn
     private Intent intent;
     private Dialog alertDialog;
 
+    private BroadcastReceiver receiver;
+    private LocalBroadcastManager localBroadcastManager;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -30,6 +36,16 @@ public class MainActivity extends AppCompatActivity implements NetworkCallbackIn
         start = findViewById(R.id.startService);
         stop = findViewById(R.id.stopService);
         next = findViewById(R.id.next_activity);
+
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                createNetworkAlertDialog();
+            }
+        };
+
+        registerReceiver(receiver,new IntentFilter("abc.efg"));
+
         intent = new Intent(MainActivity.this,BackgroundService.class);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -69,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements NetworkCallbackIn
     protected void onDestroy() {
         Log.i(TAG, "onDestroy: service killed");
         stopService(intent);
+        unregisterReceiver(receiver);
         super.onDestroy();
     }
 

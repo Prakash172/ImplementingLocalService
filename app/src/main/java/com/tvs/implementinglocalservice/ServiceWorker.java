@@ -35,8 +35,13 @@ public class ServiceWorker implements Runnable {
     public void run() {
         Log.i(TAG, "Service worker "+ Thread.currentThread().getName());
         Log.i(TAG, "run: sleeping.....");
+        //            Thread.sleep(100000);
         try {
-            Thread.sleep(100000);
+            Thread.sleep(10000);
+            Intent intent = new Intent();
+            intent.setAction("abc.efg");
+            context.sendBroadcast(intent);
+            Thread.sleep(2000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
