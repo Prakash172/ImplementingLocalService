@@ -1,5 +1,6 @@
 package com.tvs.implementinglocalservice;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -9,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -30,7 +32,7 @@ public class BackgroundService extends Service {
         displayNotificationMessage("Background Service is Running");
     }
 
-    // working in oreo also
+    // working in oreo also as channels is implemented
     private void displayNotificationMessage(String message) {
         NotificationManager mNotificationManager;
 
@@ -72,8 +74,12 @@ public class BackgroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int counter = Objects.requireNonNull(intent.getExtras()).getInt("counter");
-        Log.v(TAG, "in onStartCommand(), counter = " + counter + ", startId = " + startId);
+        int counter;
+        if(intent != null){
+            counter = Objects.requireNonNull(intent.getExtras()).getInt("counter");
+            Log.v(TAG, "in onStartCommand(), counter = " + counter + ", startId = " + startId);
+        }
+        else counter = 0;
         new Thread(threadGroup, new ServiceWorker(counter, context),
                 "com.tvs.implementinglocalservice.BackgroundService")
                 .start();
@@ -82,9 +88,9 @@ public class BackgroundService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.i(TAG, "in service onDestroy(). Interrupting threads and cancelling notifications");
-        threadGroup.interrupt();
-        notificationManager.cancelAll();
+        Log.i(TAG, "in service onDestroy()");
+//        threadGroup.interrupt(); if u interrupt the thread then you will got NullPointerException in restarting in on task removed
+//        notificationManager.cancelAll();
         super.onDestroy();
     }
 
@@ -94,7 +100,18 @@ public class BackgroundService extends Service {
         return null;
     }
 
-
+    @Override
+    public void onTaskRemoved(Intent rootIntent){
+        Intent restartServiceIntent = new Intent(getApplicationContext(), this.getClass());
+        restartServiceIntent.setPackage(getPackageName());
+        PendingIntent restartServicePendingIntent = PendingIntent.getService(getApplicationContext(), 1, rootIntent, PendingIntent.FLAG_ONE_SHOT);
+        AlarmManager alarmService = (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+        alarmService.set(
+                AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime() + 1000,
+                restartServicePendingIntent);
+        super.onTaskRemoved(rootIntent);
+    }
 }
 
 

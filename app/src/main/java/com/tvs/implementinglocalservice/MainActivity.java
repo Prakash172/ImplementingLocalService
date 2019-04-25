@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Timer;
@@ -22,13 +23,14 @@ import java.util.Timer;
 public class MainActivity extends AppCompatActivity implements NetworkCallbackInterface {
 
     private static final String TAG = "MainActivity";
-    Button start, stop,next;
-    int counter = 1;
+    Button start, stop, next;
+    static int counter = 1;
     private Intent intent;
     private Dialog alertDialog;
 
     private BroadcastReceiver receiver;
     private LocalBroadcastManager localBroadcastManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,17 +38,23 @@ public class MainActivity extends AppCompatActivity implements NetworkCallbackIn
         start = findViewById(R.id.startService);
         stop = findViewById(R.id.stopService);
         next = findViewById(R.id.next_activity);
+        final TextView countTv = findViewById(R.id.count);
 
+
+        // onReceive will run on main thread, so we cannot do long task without threading.
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                createNetworkAlertDialog();
+//                NetowrkCheckingUtilAndDialog.createNetworkAlertDialog(MainActivity.this);
+                countTv.setText(String.valueOf(counter++));
             }
         };
 
-        registerReceiver(receiver,new IntentFilter("abc.efg"));
+        // local registering , but it wont work if activity is not there,
+        // preferred and recommended way is registering through manifest file.....
 
-        intent = new Intent(MainActivity.this,BackgroundService.class);
+        registerReceiver(receiver, new IntentFilter("abc.efg"));
+        intent = new Intent(MainActivity.this, BackgroundService.class);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,60 +74,43 @@ public class MainActivity extends AppCompatActivity implements NetworkCallbackIn
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(getApplicationContext(),NextActivity.class);
+                Intent intent = new Intent(getApplicationContext(), NextActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(intent);
             }
         });
     }
 
+
     @Override
-    protected void onStop() {
-        Log.i(TAG, "onStop: service killed");
-        Toast.makeText(this, "on Stop: service killed", Toast.LENGTH_SHORT).show();
-        stopService(intent);
-        super.onStop();
+    protected void onStart() {
+        super.onStart();
+        Toast.makeText(this, "onStart", Toast.LENGTH_SHORT).show();
+        if (receiver != null)
+            registerReceiver(receiver, new IntentFilter("abc.efg"));
+        //this is working
     }
 
     @Override
-    protected void onDestroy() {
-        Log.i(TAG, "onDestroy: service killed");
-        stopService(intent);
+    protected void onStop() {
+        Log.i(TAG, "onStop: main");
+//        Toast.makeText(this, "on Stop: service killed", Toast.LENGTH_SHORT).show();
+//        stopService(intent);
+        super.onStop();
         unregisterReceiver(receiver);
+    }
+
+
+    @Override
+    protected void onDestroy() {
+        Log.i(TAG, "onDestroy: main");
+//        stopService(intent);
         super.onDestroy();
     }
 
 
-    private void createNetworkAlertDialog() {
-
-        if (alertDialog != null && alertDialog.isShowing()) return;
-        alertDialog = new AlertDialog.Builder(this)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setTitle("Network is not available")
-                .setMessage("Open network setting")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        Intent intent = new Intent(Settings.ACTION_DATA_ROAMING_SETTINGS);
-                        ComponentName cName = new ComponentName("com.android.phone", "com.android.phone.Settings");
-                        intent.setComponent(cName);
-                        startActivity(intent);
-                    }
-                })
-                //set negative button
-                .setNegativeButton("Exit", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        alertDialog.cancel();
-                    }
-                })
-                .show();
-        alertDialog.setCancelable(false);
-        alertDialog.setCanceledOnTouchOutside(false);
-    }
-
     @Override
     public void createDialog() {
-        createNetworkAlertDialog();
+        NetowrkCheckingUtilAndDialog.createNetworkAlertDialog(getBaseContext());
     }
 }
